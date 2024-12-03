@@ -136,7 +136,7 @@ const Editor = ({ onSubmit }) => {
           isSelected={selectedButton === "cancel"}
           onClick={() => {
             handleButtonClick("cancel");
-            nav(-1);
+            nav("/");
           }}
         />
         <Button

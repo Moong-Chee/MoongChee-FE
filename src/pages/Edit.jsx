@@ -5,10 +5,10 @@ import { useNavigate } from "react-router-dom";
 const Container = styled.div`
   display: flex;
   flex-direction: column;
-  justify-content: space-between; /* 위아래 여백 균형 */
+  justify-content: space-between;
   width: 100%;
   max-width: 393px;
-  min-height: 100vh; /* 전체 화면 높이를 채움 */
+  min-height: 100vh;
   margin: 0 auto;
   padding: 0;
   background-color: white;
@@ -106,12 +106,46 @@ const CategoryList = styled.div`
     border-radius: 5px;
     font-size: 14px;
     cursor: pointer;
-    width: 80px; /* 모든 버튼의 너비 고정 */
-    height: 30px; /* 모든 버튼의 높이 고정 */
+    width: 80px;
+    height: 30px;
 
     &.selected {
       background-color: #555;
       color: white;
+    }
+  }
+`;
+
+const StatusSection = styled.section`
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+  width: 100%;
+
+  label {
+    font-size: 16px;
+    font-weight: bold;
+    color: #555;
+    margin-right: 16px;
+    min-width: 80px;
+  }
+
+  div {
+    display: flex;
+    gap: 10px;
+
+    button {
+      padding: 8px 12px;
+      border: none;
+      background-color: #d9d9d9;
+      border-radius: 5px;
+      font-size: 14px;
+      cursor: pointer;
+
+      &.selected {
+        background-color: #555;
+        color: white;
+      }
     }
   }
 `;
@@ -144,16 +178,18 @@ const ButtonContainer = styled.div`
   }
 `;
 
-const Register = () => {
+const Edit = () => {
   const [input, setInput] = useState({
     image: null,
-    productName: "",
-    category: "",
-    content: "",
+    productName: "C언어 전공책",
+    category: "서적",
+    content: "필기 깔끔하게 잘 되어 있습니다!",
     possibleDate: new Date().toISOString().split("T")[0],
-    price: "",
+    price: "5,000원",
+    status: "거래가능",
   });
-  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState("서적");
+  const [selectedStatus, setSelectedStatus] = useState("거래가능");
 
   const navigate = useNavigate();
 
@@ -170,28 +206,25 @@ const Register = () => {
     setInput({ ...input, category });
   };
 
+  const handleStatusClick = (status) => {
+    setSelectedStatus(status);
+    setInput({ ...input, status });
+  };
+
   const handleSubmit = () => {
-    console.log("등록 완료:", input);
-    navigate("/");
+    console.log("수정 완료:", input);
+    navigate("/ongoing-transaction"); // 메인 페이지로 이동
   };
 
   const handleCancel = () => {
-    navigate("/");
+    navigate("/ongoing-transaction");
   };
 
   return (
     <Container>
-      <Header>상품 등록</Header>
+      <Header>상품 수정</Header>
       <UploadSection>
-        <div className="upload-box">사진/동영상 업로드</div>
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(e) =>
-            setInput({ ...input, image: e.target.files[0] || null })
-          }
-          style={{ display: "none" }}
-        />
+        <div className="upload-box">사진/동영상</div>
       </UploadSection>
       <InputRow>
         <label>상품명</label>
@@ -226,6 +259,20 @@ const Register = () => {
           onChange={onChangeInput}
         />
       </InputRow>
+      <StatusSection>
+        <label>상태변경</label>
+        <div>
+          {["거래가능", "거래중", "거래완료"].map((status) => (
+            <button
+              key={status}
+              onClick={() => handleStatusClick(status)}
+              className={selectedStatus === status ? "selected" : ""}
+            >
+              {status}
+            </button>
+          ))}
+        </div>
+      </StatusSection>
       <InputRow>
         <label>대여 가능 날짜</label>
         <input
@@ -249,11 +296,11 @@ const Register = () => {
           취소
         </button>
         <button className="submit-btn" onClick={handleSubmit}>
-          등록
+          수정
         </button>
       </ButtonContainer>
     </Container>
   );
 };
 
-export default Register;
+export default Edit;
