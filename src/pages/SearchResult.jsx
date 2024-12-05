@@ -1,13 +1,12 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
 
 const Container = styled.div`
   display: flex;
   flex-direction: column;
-  width: 100%;
-  max-width: 393px;
-  height: 100vh;
+  width: 393px;
+  height: 852px;
   margin: 0 auto;
   padding: 0;
   background-color: white;
@@ -19,6 +18,9 @@ const Header = styled.header`
   align-items: center;
   padding: 10px;
   border-bottom: 1px solid #ddd;
+  position: sticky; /* 헤더를 고정 */
+  top: 0; /* 스크롤 시 상단에 고정 */
+  z-index: 1000; /* 다른 요소 위에 나타나도록 z-index 설정 */
 
   .back-button {
     font-size: 20px;
@@ -39,6 +41,7 @@ const Header = styled.header`
 
 const ProductList = styled.div`
   padding: 16px;
+  overflow-y: auto; /* 세로 스크롤 가능 */
 `;
 
 const ProductCard = styled.div`
@@ -67,6 +70,9 @@ const ProductCard = styled.div`
       margin-bottom: 8px;
       text-align: left; /* 왼쪽 정렬 */
       width: 100%; /* 텍스트가 부모 컨테이너를 채움 */
+      white-space: nowrap; /* 한 줄로 표시 */
+      overflow: hidden; /* 넘치는 텍스트 숨김 */
+      text-overflow: ellipsis; /* 말줄임 표시 */
     }
 
     .product-info {
@@ -89,20 +95,13 @@ const ProductCard = styled.div`
 
 const SearchResult = () => {
   const navigate = useNavigate();
+  const [results, setResults] = useState([]);
 
-  // 임의의 데이터
-  const searchQuery = "컴공";
-  const products = [
-    { title: "컴공 JAVA 책", info: "대여 | 25분전", price: "3,000원" },
-    { title: "컴공 24학번 과잠 M", info: "대여 | 25분전", price: "3,000원" },
-    { title: "컴공 C언어 책", info: "대여 | 25분전", price: "3,000원" },
-    {
-      title: "컴공 필수템 노트북 거치대",
-      info: "대여 | 25분전",
-      price: "3,000원",
-    },
-    { title: "컴공 19학번 과잠", info: "대여 | 25분전", price: "3,000원" },
-  ];
+  useEffect(() => {
+    const searchResults =
+      JSON.parse(localStorage.getItem("searchResults")) || [];
+    setResults(searchResults);
+  }, []);
 
   return (
     <Container>
@@ -113,17 +112,24 @@ const SearchResult = () => {
         <input
           type="text"
           className="search-input"
-          value={searchQuery}
+          value=""
+          placeholder="검색 결과"
           readOnly
         />
       </Header>
       <ProductList>
-        {products.map((product, index) => (
-          <ProductCard key={index}>
-            <div className="product-image" />
+        {results.map((product) => (
+          <ProductCard key={product.id}>
+            <div
+              className="product-image"
+              style={{
+                backgroundImage: `url(${product.image})`,
+                backgroundSize: "cover",
+              }}
+            />
             <div className="product-details">
-              <span className="product-title">{product.title}</span>
-              <span className="product-info">{product.info}</span>
+              <span className="product-title">{product.productName}</span>
+              <span className="product-info">{product.date}</span>
               <span className="product-price">{product.price}</span>
             </div>
           </ProductCard>

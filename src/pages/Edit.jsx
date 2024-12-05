@@ -212,20 +212,36 @@ const Edit = () => {
   const handleSubmit = () => {
     if (input.status === "거래종료") {
       // 거래종료 상태일 경우 진행중인 거래에서 제거하고 종료된 거래로 이동
-      setOngoingProducts((prev) =>
-        prev.filter((item) => item.id !== product.id)
+      const updatedOngoingProducts = ongoingProducts.filter(
+        (item) => item.id !== product.id
       );
+      setOngoingProducts(updatedOngoingProducts);
       setClosedProducts((prev) => [input, ...prev]);
+
+      // 로컬스토리지 업데이트
+      localStorage.setItem(
+        "ongoingProducts",
+        JSON.stringify(updatedOngoingProducts)
+      );
+      localStorage.setItem(
+        "closedProducts",
+        JSON.stringify([input, ...closedProducts])
+      );
     } else {
-      // 상태를 업데이트하여 진행중인 거래에 반영
-      setOngoingProducts((prev) =>
-        prev.map((item) =>
-          item.id === product.id
-            ? { ...input } // 상품 전체 데이터를 업데이트
-            : item
-        )
+      // 진행중인 거래 상태 업데이트
+      const updatedOngoingProducts = ongoingProducts.map((item) =>
+        item.id === product.id ? { ...input } : item
+      );
+      setOngoingProducts(updatedOngoingProducts);
+
+      // 로컬스토리지 업데이트
+      localStorage.setItem(
+        "ongoingProducts",
+        JSON.stringify(updatedOngoingProducts)
       );
     }
+
+    // 상태에 따라 이동
     navigate(
       input.status === "거래종료"
         ? "/closed-transaction"

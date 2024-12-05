@@ -7,13 +7,11 @@ const Container = styled.div`
   display: flex;
   flex-direction: column;
   width: 393px;
-  height: 100%;
-  max-height: 852px;
+  height: 852px;
   margin: 0 auto;
   background-color: white;
   font-family: "Arial", sans-serif;
   box-sizing: border-box;
-  overflow-y: auto;
 `;
 
 const Header = styled.header`
@@ -24,6 +22,9 @@ const Header = styled.header`
   background-color: white;
   border-bottom: 1px solid #ddd;
   box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+  position: sticky; /* 헤더를 고정 */
+  top: 0; /* 스크롤 시 상단에 고정 */
+  z-index: 1000; /* 다른 요소 위에 나타나도록 z-index 설정 */
 
   .back-icon {
     font-size: 20px;
@@ -45,6 +46,7 @@ const ListContainer = styled.div`
   align-items: center;
   flex: 1;
   padding: 16px 0;
+  overflow-y: auto; /* 세로 스크롤 가능 */
 `;
 
 const ItemCard = styled.div`

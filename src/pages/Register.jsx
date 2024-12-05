@@ -171,6 +171,7 @@ const Register = () => {
     productName: "",
     category: "",
     content: "",
+    status: "거래가능",
     possibleDate: new Date().toISOString().split("T")[0],
     price: "",
   });
@@ -212,12 +213,15 @@ const Register = () => {
       productName: input.productName,
       category: input.category,
       content: input.content,
+      status: input.status,
       possibleDate: input.possibleDate, // 올바르게 수정
       price: input.price,
       date: new Date().toLocaleDateString("ko-KR"), // 한국어 형식 날짜
     };
 
+    const updatedProducts = [newProduct, ...ongoingProducts];
     setOngoingProducts((prev) => [newProduct, ...prev]); // 기존 상품 유지하며 추가
+    localStorage.setItem("ongoingProducts", JSON.stringify(updatedProducts));
     navigate("/"); // 메인 페이지로 이동
   };
 

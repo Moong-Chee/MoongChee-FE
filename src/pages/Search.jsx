@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
+import { UserContext } from "../App";
 
 const Container = styled.div`
   display: flex;
@@ -88,6 +89,8 @@ const CategoryList = styled.div`
 `;
 
 const Search = () => {
+  const { ongoingProducts } = useContext(UserContext);
+  const [keyword, setKeyword] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(null);
   const navigate = useNavigate();
 
@@ -100,6 +103,16 @@ const Search = () => {
   };
 
   const handleSearch = () => {
+    const results = ongoingProducts
+      .filter(
+        (product) =>
+          product.status !== "거래종료" &&
+          product.productName.includes(keyword) &&
+          (!selectedCategory || product.category === selectedCategory)
+      )
+      .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    localStorage.setItem("searchResults", JSON.stringify(results));
     navigate("/searchresult"); // 검색 결과 페이지로 이동
   };
 
@@ -114,6 +127,8 @@ const Search = () => {
             type="text"
             className="search-input"
             placeholder="검색어를 입력하세요"
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
           />
           <button className="search-button" onClick={handleSearch}>
             🔍
