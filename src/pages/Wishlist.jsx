@@ -1,17 +1,20 @@
-import React from "react";
+import React, { useContext } from "react";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom"; // 페이지 이동을 위한 useNavigate 훅
-import { FaHeart } from "react-icons/fa"; // 하트 아이콘
+import { FaHeart } from "react-icons/fa";
+import { UserContext } from "../App";
 
 const Container = styled.div`
   display: flex;
   flex-direction: column;
   width: 393px;
-  height: 852px;
+  height: 100%;
+  max-height: 852px;
   margin: 0 auto;
   background-color: white;
   font-family: "Arial", sans-serif;
   box-sizing: border-box;
+  overflow-y: auto;
 `;
 
 const Header = styled.header`
@@ -41,23 +44,21 @@ const ListContainer = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   flex: 1;
-  padding: 0;
+  padding: 16px 0;
 `;
 
 const ItemCard = styled.div`
   display: flex;
   align-items: center;
   position: relative;
-  width: 342px;
-  height: 183px;
-  background-color: white;
-  border: 1px solid #ddd;
-  border-radius: 10px;
   margin-bottom: 16px;
   padding: 16px;
-  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.05);
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+  width: 342px;
 `;
 
 const ItemDate = styled.div`
@@ -73,38 +74,48 @@ const ItemImage = styled.img`
   height: 113px;
   border-radius: 8px;
   object-fit: cover;
-  margin-top: 10px; /* 이미지 위치를 살짝 아래로 조정 */
+  margin-right: 16px;
+  margin-top: 20px;
 `;
 
 const ItemDetails = styled.div`
   display: flex;
   flex-direction: column;
   justify-content: center;
-  margin-left: 10px; /* 텍스트를 이미지와 더 가까이 배치 */
+  margin-left: 10px;
+  margin-top: 20px;
   flex: 1;
 
   span {
     font-size: 16px;
     font-weight: bold;
     color: #333;
+    margin-bottom: 4px; /* 상품명과 가격 사이 간격 조정 */
   }
 
   p {
     font-size: 14px;
     color: #777;
-    margin-top: 8px;
   }
 `;
 
 const HeartIcon = styled(FaHeart)`
   position: absolute;
-  top: 10px;
-  right: 10px;
-  font-size: 20px;
+  top: 16px;
+  right: 16px;
   color: red;
+  cursor: pointer;
 `;
 
 const Wishlist = () => {
+  const { favoriteProducts, setFavoriteProducts } = useContext(UserContext);
+
+  const removeFavorite = (productId) => {
+    setFavoriteProducts(
+      favoriteProducts.filter((item) => item.id !== productId)
+    );
+  };
+
   const navigate = useNavigate(); // 페이지 이동을 위한 useNavigate 훅 사용
 
   return (
@@ -117,47 +128,21 @@ const Wishlist = () => {
         {/* 뒤로가기 버튼 */}
         <h1>관심 목록</h1>
       </Header>
-
-      {/* List */}
       <ListContainer>
-        {/* 첫 번째 상품 */}
-        <ItemCard>
-          <ItemDate>24년 9월 16일</ItemDate>
-          <ItemImage
-            src="https://via.placeholder.com/113x113"
-            alt="컴퓨터공학과 과잠"
-          />
-          <ItemDetails>
-            <span>컴퓨터공학과 과잠</span>
-            <p>20,000원</p>
-          </ItemDetails>
-          <HeartIcon />
-        </ItemCard>
-
-        {/* 두 번째 상품 */}
-        <ItemCard>
-          <ItemDate>24년 7월 21일</ItemDate>
-          <ItemImage
-            src="https://via.placeholder.com/113x113"
-            alt="SQLD 노트"
-          />
-          <ItemDetails>
-            <span>SQLD 노트</span>
-            <p>10,000원</p>
-          </ItemDetails>
-          <HeartIcon />
-        </ItemCard>
-
-        {/* 세 번째 상품 */}
-        <ItemCard>
-          <ItemDate>24년 3월 1일</ItemDate>
-          <ItemImage src="https://via.placeholder.com/113x113" alt="에코백" />
-          <ItemDetails>
-            <span>에코백</span>
-            <p>5,000원</p>
-          </ItemDetails>
-          <HeartIcon />
-        </ItemCard>
+        {favoriteProducts
+          .slice()
+          .sort((a, b) => new Date(b.date) - new Date(a.date)) // 최신순 정렬
+          .map((product) => (
+            <ItemCard key={product.id}>
+              <ItemDate>{product.date}</ItemDate>
+              <ItemImage src={product.image} alt={product.productName} />
+              <ItemDetails>
+                <span>{product.productName}</span>
+                <p>{product.price}원</p>
+              </ItemDetails>
+              <HeartIcon onClick={() => removeFavorite(product.id)} />
+            </ItemCard>
+          ))}
       </ListContainer>
     </Container>
   );

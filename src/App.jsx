@@ -1,6 +1,6 @@
 import "./App.css";
 import { useReducer, useRef, createContext, useState, useEffect } from "react";
-import { Router, Routes, Route, Link, useNavigate } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import Register from "./pages/Register";
 import Product from "./pages/Product";
 import Notfound from "./pages/Notfound";
@@ -13,6 +13,10 @@ import Profile from "./pages/Profile";
 import Edit from "./pages/Edit";
 import Search from "./pages/Search";
 import SearchResult from "./pages/SearchResult";
+import Initialinfo from "./pages/InitialInfo";
+import Review from "./pages/Review";
+import Chat from "./pages/Chat";
+import Detail from "./pages/Detail";
 
 const productData = [
   {
@@ -39,62 +43,77 @@ function reducer(state, action) {
   switch (action.type) {
     case "CREATE":
       return [action.data, ...state];
+    default:
+      return state;
   }
 }
 
+// Context 생성
 export const ProductStateContext = createContext();
 export const ProductDispatchContext = createContext();
 export const UserContext = createContext();
 
 function App() {
   const [data, dispatch] = useReducer(reducer, productData);
-  const [profileImage, setProfileImage] = useState(() => {
-    const savedImage = localStorage.getItem("profileImage");
-    return savedImage
-      ? new Blob([new Uint8Array(JSON.parse(savedImage))])
-      : null;
+
+  const [userInfo, setUserInfo] = useState(() => {
+    return (
+      JSON.parse(localStorage.getItem("userInfo")) || {
+        profileImage: "",
+        name: "",
+        email: "",
+        phone: "",
+        birthDate: "",
+        department: "",
+        studentId: "",
+      }
+    );
   });
-  const [nickname, setNickname] = useState(() => {
-    return localStorage.getItem("nickname") || "홍길동";
-  });
+
   const [reviews, setReviews] = useState(() => {
     const savedReviews = localStorage.getItem("reviews");
     return savedReviews ? JSON.parse(savedReviews) : [];
   });
-  const idRef = useRef(3);
+
+  const [favoriteProducts, setFavoriteProducts] = useState(() => {
+    return JSON.parse(localStorage.getItem("favoriteProducts")) || [];
+  });
+
+  const [ongoingProducts, setOngoingProducts] = useState(() => {
+    return JSON.parse(localStorage.getItem("ongoingProducts")) || [];
+  });
+
+  const [closedProducts, setClosedProducts] = useState(() => {
+    return JSON.parse(localStorage.getItem("closedProducts")) || [];
+  });
+
+  const idRef = useRef(
+    Math.max(
+      ...ongoingProducts.map((product) => product.id),
+      ...closedProducts.map((product) => product.id),
+      0
+    ) + 1
+  );
 
   useEffect(() => {
-    localStorage.removeItem("profileImage");
-    localStorage.removeItem("nickname");
-    localStorage.removeItem("reviews");
-
-    setProfileImage(null);
-    setNickname("홍길동");
-    setReviews([]);
-  }, []);
-
-  /*
-  useEffect(() => {
-    if (profileImage) {
-      const reader = new FileReader();
-      reader.readAsArrayBuffer(profileImage);
-      reader.onloadend = () => {
-        localStorage.setItem(
-          "profileImage",
-          JSON.stringify([...new Uint8Array(reader.result)])
-        );
-      };
-    }
-  }, [profileImage]);
-
-  useEffect(() => {
-    localStorage.setItem("nickname", nickname);
-  }, [nickname]);
+    localStorage.setItem("userInfo", JSON.stringify(userInfo));
+  }, [userInfo]);
 
   useEffect(() => {
     localStorage.setItem("reviews", JSON.stringify(reviews));
   }, [reviews]);
-  */
+
+  useEffect(() => {
+    localStorage.setItem("favoriteProducts", JSON.stringify(favoriteProducts));
+  }, [favoriteProducts]);
+
+  useEffect(() => {
+    localStorage.setItem("ongoingProducts", JSON.stringify(ongoingProducts));
+  }, [ongoingProducts]);
+
+  useEffect(() => {
+    localStorage.setItem("closedProducts", JSON.stringify(closedProducts));
+  }, [closedProducts]);
 
   const onCreate = (
     image,
@@ -119,37 +138,43 @@ function App() {
   };
 
   return (
-    <>
-      <UserContext.Provider
-        value={{
-          profileImage,
-          setProfileImage,
-          nickname,
-          setNickname,
-          reviews,
-          setReviews,
-        }}
-      >
-        <ProductStateContext.Provider value={data}>
-          <ProductDispatchContext.Provider value={{ onCreate }}>
-            <Routes>
-              <Route path="/" element={<Main />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/product/:id" element={<Product />} />
-              <Route path="/mypage" element={<Mypage />} />
-              <Route path="/wishlist" element={<Wishlist />} />
-              <Route path="/ongoing-transaction" element={<Ongoing />} />
-              <Route path="/closed-transaction" element={<Closed />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/edit" element={<Edit />} />
-              <Route path="/search" element={<Search />} />
-              <Route path="/searchresult" element={<SearchResult />} />
-              <Route path="*" element={<Notfound />} />
-            </Routes>
-          </ProductDispatchContext.Provider>
-        </ProductStateContext.Provider>
-      </UserContext.Provider>
-    </>
+    <UserContext.Provider
+      value={{
+        ...userInfo,
+        setUserInfo,
+        reviews,
+        setReviews,
+        favoriteProducts,
+        setFavoriteProducts,
+        ongoingProducts,
+        setOngoingProducts,
+        closedProducts,
+        setClosedProducts,
+      }}
+    >
+      <ProductStateContext.Provider value={data}>
+        <ProductDispatchContext.Provider value={{ onCreate }}>
+          <Routes>
+            <Route path="/" element={<Main />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/product/:id" element={<Product />} />
+            <Route path="/mypage" element={<Mypage />} />
+            <Route path="/wishlist" element={<Wishlist />} />
+            <Route path="/ongoing-transaction" element={<Ongoing />} />
+            <Route path="/closed-transaction" element={<Closed />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/edit/:id" element={<Edit />} />
+            <Route path="/search" element={<Search />} />
+            <Route path="/searchresult" element={<SearchResult />} />
+            <Route path="/initialinfo" element={<Initialinfo />} />
+            <Route path="/review" element={<Review />} />
+            <Route path="/chat" element={<Chat />} />
+            <Route path="/detail" element={<Detail />} />
+            <Route path="*" element={<Notfound />} />
+          </Routes>
+        </ProductDispatchContext.Provider>
+      </ProductStateContext.Provider>
+    </UserContext.Provider>
   );
 }
 

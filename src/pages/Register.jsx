@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useContext, useRef } from "react";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
+import { UserContext } from "../App";
 
 const Container = styled.div`
   display: flex;
@@ -46,6 +47,16 @@ const UploadSection = styled.section`
     font-size: 12px;
     color: #555;
     cursor: pointer;
+  }
+  input[type="file"] {
+    display: none; /* 숨기기 */
+  }
+
+  img {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 8px;
   }
 `;
 
@@ -145,7 +156,17 @@ const ButtonContainer = styled.div`
 `;
 
 const Register = () => {
+  const { ongoingProducts, setOngoingProducts } = useContext(UserContext);
+  const idRef = useRef(
+    Math.max(...ongoingProducts.map((product) => product.id), 0) + 1
+  ); // 고유 ID 관리
   const [input, setInput] = useState({
+    id: idRef.current,
+    date: new Date().toLocaleDateString("ko-KR", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }),
     image: null,
     productName: "",
     category: "",
@@ -154,6 +175,8 @@ const Register = () => {
     price: "",
   });
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [previewImage, setPreviewImage] = useState(null);
+  const fileInputRef = useRef(null);
 
   const navigate = useNavigate();
 
@@ -165,14 +188,37 @@ const Register = () => {
     });
   };
 
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setInput({ ...input, image: reader.result }); // Base64 이미지 저장
+        setPreviewImage(reader.result); // 미리보기 설정
+      };
+      reader.readAsDataURL(file); // 파일을 Base64로 변환
+    }
+  };
+
   const handleCategoryClick = (category) => {
     setSelectedCategory(category);
     setInput({ ...input, category });
   };
 
   const handleSubmit = () => {
-    console.log("등록 완료:", input);
-    navigate("/");
+    const newProduct = {
+      id: idRef.current++, // 고유 ID 생성
+      image: input.image, // Base64 이미지 사용
+      productName: input.productName,
+      category: input.category,
+      content: input.content,
+      possibleDate: input.possibleDate, // 올바르게 수정
+      price: input.price,
+      date: new Date().toLocaleDateString("ko-KR"), // 한국어 형식 날짜
+    };
+
+    setOngoingProducts((prev) => [newProduct, ...prev]); // 기존 상품 유지하며 추가
+    navigate("/"); // 메인 페이지로 이동
   };
 
   const handleCancel = () => {
@@ -183,14 +229,21 @@ const Register = () => {
     <Container>
       <Header>상품 등록</Header>
       <UploadSection>
-        <div className="upload-box">사진/동영상 업로드</div>
+        <div
+          className="upload-box"
+          onClick={() => fileInputRef.current.click()} // 파일 선택 창 열기
+        >
+          {previewImage ? (
+            <img src={previewImage} alt="미리보기" />
+          ) : (
+            "사진/동영상 업로드"
+          )}
+        </div>
         <input
+          ref={fileInputRef}
           type="file"
           accept="image/*"
-          onChange={(e) =>
-            setInput({ ...input, image: e.target.files[0] || null })
-          }
-          style={{ display: "none" }}
+          onChange={handleFileUpload}
         />
       </UploadSection>
       <InputRow>

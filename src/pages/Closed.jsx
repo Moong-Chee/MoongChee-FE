@@ -1,14 +1,16 @@
-import React from "react";
+import React, { useContext } from "react";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom"; // 페이지 이동을 위한 useNavigate 훅
-import { FaHeart } from "react-icons/fa"; // 하트 아이콘
+import { UserContext } from "../App";
 
 const Container = styled.div`
   display: flex;
   flex-direction: column;
   width: 393px;
-  height: 852px;
+  height: 100%;
+  max-height: 852px;
   margin: 0 auto;
+  overflow-y: auto;
   background-color: white;
   font-family: "Arial", sans-serif;
   box-sizing: border-box;
@@ -41,9 +43,8 @@ const ListContainer = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   flex: 1;
-  padding: 0;
+  padding: 16px 0;
 `;
 
 const ItemCard = styled.div`
@@ -114,6 +115,7 @@ const ItemDetails = styled.div`
 `;
 
 const Closed = () => {
+  const { closedProducts } = useContext(UserContext);
   const navigate = useNavigate(); // 페이지 이동을 위한 useNavigate 훅 사용
 
   return (
@@ -129,44 +131,20 @@ const Closed = () => {
 
       {/* List */}
       <ListContainer>
-        {/* 첫 번째 상품 */}
-        <ItemCard>
-          <ItemDate>24년 9월 16일</ItemDate>
-          <ItemImage
-            src="https://via.placeholder.com/113x113"
-            alt="컴퓨터공학과 과잠"
-          />
-          <ItemDetails>
-            <span>컴퓨터공학과 과잠</span>
-            <p>20,000원</p>
-          </ItemDetails>
-          <TransactionStatus>거래종료</TransactionStatus>
-        </ItemCard>
-
-        {/* 두 번째 상품 */}
-        <ItemCard>
-          <ItemDate>24년 7월 21일</ItemDate>
-          <ItemImage
-            src="https://via.placeholder.com/113x113"
-            alt="SQLD 노트"
-          />
-          <ItemDetails>
-            <span>SQLD 노트</span>
-            <p>10,000원</p>
-          </ItemDetails>
-          <TransactionStatus>거래종료</TransactionStatus>
-        </ItemCard>
-
-        {/* 세 번째 상품 */}
-        <ItemCard>
-          <ItemDate>24년 3월 1일</ItemDate>
-          <ItemImage src="https://via.placeholder.com/113x113" alt="에코백" />
-          <ItemDetails>
-            <span>에코백</span>
-            <p>5,000원</p>
-          </ItemDetails>
-          <TransactionStatus>거래종료</TransactionStatus>
-        </ItemCard>
+        {closedProducts
+          .slice()
+          .sort((a, b) => new Date(b.date) - new Date(a.date)) // 최신순 정렬
+          .map((product) => (
+            <ItemCard key={product.id}>
+              <ItemDate>{product.date}</ItemDate>
+              <ItemImage src={product.image} alt={product.productName} />
+              <ItemDetails>
+                <span>{product.productName}</span>
+                <p>{product.price}</p>
+              </ItemDetails>
+              <TransactionStatus>거래종료</TransactionStatus>
+            </ItemCard>
+          ))}
       </ListContainer>
     </Container>
   );

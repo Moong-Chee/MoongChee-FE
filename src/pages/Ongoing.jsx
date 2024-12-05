@@ -1,16 +1,19 @@
-import React from "react";
+import React, { useContext } from "react";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
+import { UserContext } from "../App";
 
 const Container = styled.div`
   display: flex;
   flex-direction: column;
   width: 393px;
-  height: 852px;
+  height: 100%;
+  max-height: 852px;
   margin: 0 auto;
   background-color: white;
   font-family: "Arial", sans-serif;
   box-sizing: border-box;
+  overflow-y: auto;
 `;
 
 const Header = styled.header`
@@ -40,9 +43,8 @@ const ListContainer = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   flex: 1;
-  padding: 0;
+  padding: 16px 0;
 `;
 
 const ItemCard = styled.div`
@@ -117,6 +119,9 @@ const ItemDetails = styled.div`
     font-size: 16px;
     font-weight: bold;
     color: #333;
+    white-space: nowrap; /* 줄바꿈 방지 */
+    overflow: hidden; /* 넘치는 텍스트 숨김 */
+    text-overflow: ellipsis; /* 말줄임 표시 */
   }
 
   p {
@@ -127,10 +132,11 @@ const ItemDetails = styled.div`
 `;
 
 const Ongoing = () => {
+  const { ongoingProducts } = useContext(UserContext);
   const navigate = useNavigate();
 
-  const handleEdit = () => {
-    navigate("/edit"); // 수정 페이지로 이동
+  const handleEdit = (id) => {
+    navigate(`/edit/${id}`); // 수정 페이지로 이동
   };
 
   return (
@@ -143,44 +149,18 @@ const Ongoing = () => {
       </Header>
 
       <ListContainer>
-        <ItemCard>
-          <ItemDate>24년 9월 16일</ItemDate>
-          <EditIcon onClick={handleEdit}>✏️</EditIcon>
-          <ItemImage
-            src="https://via.placeholder.com/113x113"
-            alt="컴퓨터공학과 과잠"
-          />
-          <ItemDetails>
-            <span>컴퓨터공학과 과잠</span>
-            <p>20,000원</p>
-          </ItemDetails>
-          <TransactionStatus>거래중</TransactionStatus>
-        </ItemCard>
-
-        <ItemCard>
-          <ItemDate>24년 7월 21일</ItemDate>
-          <EditIcon onClick={handleEdit}>✏️</EditIcon>
-          <ItemImage
-            src="https://via.placeholder.com/113x113"
-            alt="SQLD 노트"
-          />
-          <ItemDetails>
-            <span>SQLD 노트</span>
-            <p>10,000원</p>
-          </ItemDetails>
-          <TransactionStatus>거래중</TransactionStatus>
-        </ItemCard>
-
-        <ItemCard>
-          <ItemDate>24년 3월 1일</ItemDate>
-          <EditIcon onClick={handleEdit}>✏️</EditIcon>
-          <ItemImage src="https://via.placeholder.com/113x113" alt="에코백" />
-          <ItemDetails>
-            <span>에코백</span>
-            <p>5,000원</p>
-          </ItemDetails>
-          <TransactionStatus>거래중</TransactionStatus>
-        </ItemCard>
+        {ongoingProducts.map((item) => (
+          <ItemCard key={item.id}>
+            <ItemDate>{item.date}</ItemDate>
+            <EditIcon onClick={() => navigate(`/edit/${item.id}`)}>✏️</EditIcon>
+            <ItemImage src={item.image} alt={item.productName} />
+            <ItemDetails>
+              <span>{item.productName}</span>
+              <p>{item.price}</p>
+            </ItemDetails>
+            <TransactionStatus>{item.status}</TransactionStatus>
+          </ItemCard>
+        ))}
       </ListContainer>
     </Container>
   );

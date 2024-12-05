@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useContext } from "react";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
+import { UserContext } from "../App";
 
 const Container = styled.div`
   display: flex;
@@ -41,20 +42,20 @@ const ProfileInfo = styled.div`
   .info-row {
     display: flex;
     flex-direction: column;
-    margin-bottom: 30px; /* 각 행 간격 조정 */
+    margin-bottom: 30px;
 
     .label {
       font-size: 14px;
       font-weight: bold;
       color: #777;
-      margin-bottom: 8px; /* 라벨과 데이터 사이 간격 */
+      margin-bottom: 8px;
     }
 
     .value {
       font-size: 16px;
       font-weight: normal;
       color: #333;
-      border-bottom: 1px solid #ddd; /* 밑줄 추가 */
+      border-bottom: 1px solid #ddd;
       padding-bottom: 4px;
     }
   }
@@ -62,6 +63,8 @@ const ProfileInfo = styled.div`
 
 const ProfilePage = () => {
   const navigate = useNavigate();
+  const { name, email, phone, birthDate, department, studentId } =
+    useContext(UserContext);
 
   return (
     <Container>
@@ -70,32 +73,32 @@ const ProfilePage = () => {
           ←
         </div>
         <div>프로필 조회</div>
-        <div></div> {/* Right-side empty for layout balance */}
+        <div></div>
       </Header>
       <ProfileInfo>
         <div className="info-row">
           <div className="label">이름</div>
-          <div className="value">홍길동</div>
+          <div className="value">{name || "홍길동"}</div>
         </div>
         <div className="info-row">
           <div className="label">이메일</div>
-          <div className="value">@gachon.ac.kr</div>
+          <div className="value">{email || "@gachon.ac.kr"}</div>
         </div>
         <div className="info-row">
           <div className="label">핸드폰</div>
-          <div className="value">010-1234-5678</div>
+          <div className="value">{phone || "010-1234-5678"}</div>
         </div>
         <div className="info-row">
           <div className="label">생년월일</div>
-          <div className="value">2003-12-12</div>
+          <div className="value">{birthDate || "생년월일 설정필요"}</div>
         </div>
         <div className="info-row">
           <div className="label">학과</div>
-          <div className="value">컴퓨터공학과</div>
+          <div className="value">{department || "컴퓨터공학과"}</div>
         </div>
         <div className="info-row">
           <div className="label">학번</div>
-          <div className="value">2022XXXX</div>
+          <div className="value">{studentId || "2022XXXXX"}</div>
         </div>
       </ProfileInfo>
     </Container>

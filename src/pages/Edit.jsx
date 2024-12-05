@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import styled from "styled-components";
-import { useNavigate } from "react-router-dom";
+import { UserContext } from "../App";
+import { useNavigate, useParams } from "react-router-dom";
 
 const Container = styled.div`
   display: flex;
@@ -179,19 +180,69 @@ const ButtonContainer = styled.div`
 `;
 
 const Edit = () => {
-  const [input, setInput] = useState({
-    image: null,
-    productName: "C언어 전공책",
-    category: "서적",
-    content: "필기 깔끔하게 잘 되어 있습니다!",
-    possibleDate: new Date().toISOString().split("T")[0],
-    price: "5,000원",
-    status: "거래가능",
-  });
-  const [selectedCategory, setSelectedCategory] = useState("서적");
-  const [selectedStatus, setSelectedStatus] = useState("거래가능");
+  const { id } = useParams();
+  const navigate = useNavigate(); // 상품 ID 가져오기
+  const {
+    ongoingProducts,
+    setOngoingProducts,
+    closedProducts,
+    setClosedProducts,
+  } = useContext(UserContext);
 
-  const navigate = useNavigate();
+  const product =
+    ongoingProducts.find((item) => item.id === parseInt(id)) || {};
+
+  const [input, setInput] = useState({
+    ...product,
+    status: product.status || "거래가능",
+  });
+
+  const handleCategoryClick = (category) => {
+    setInput({ ...input, category });
+  };
+
+  const handleStatusClick = (status) => {
+    setInput({ ...input, status });
+  };
+
+  const handleCancel = () => {
+    navigate("/ongoing-transaction");
+  };
+
+  const handleSubmit = () => {
+    if (input.status === "거래종료") {
+      // 거래종료 상태일 경우 진행중인 거래에서 제거하고 종료된 거래로 이동
+      setOngoingProducts((prev) =>
+        prev.filter((item) => item.id !== product.id)
+      );
+      setClosedProducts((prev) => [input, ...prev]);
+    } else {
+      // 상태를 업데이트하여 진행중인 거래에 반영
+      setOngoingProducts((prev) =>
+        prev.map((item) =>
+          item.id === product.id
+            ? { ...input } // 상품 전체 데이터를 업데이트
+            : item
+        )
+      );
+    }
+    navigate(
+      input.status === "거래종료"
+        ? "/closed-transaction"
+        : "/ongoing-transaction"
+    );
+  };
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setInput({ ...input, image: reader.result }); // Base64 이미지 저장
+      };
+      reader.readAsDataURL(file); // 파일을 Base64로 변환
+    }
+  };
 
   const onChangeInput = (e) => {
     const { name, value } = e.target;
@@ -201,37 +252,32 @@ const Edit = () => {
     });
   };
 
-  const handleCategoryClick = (category) => {
-    setSelectedCategory(category);
-    setInput({ ...input, category });
-  };
-
-  const handleStatusClick = (status) => {
-    setSelectedStatus(status);
-    setInput({ ...input, status });
-  };
-
-  const handleSubmit = () => {
-    console.log("수정 완료:", input);
-    navigate("/ongoing-transaction"); // 메인 페이지로 이동
-  };
-
-  const handleCancel = () => {
-    navigate("/ongoing-transaction");
-  };
-
   return (
     <Container>
       <Header>상품 수정</Header>
       <UploadSection>
-        <div className="upload-box">사진/동영상</div>
+        <div className="upload-box">
+          <label>
+            {input.image ? (
+              <img src={input.image} alt="미리보기" style={{ width: "100%" }} />
+            ) : (
+              "사진/동영상"
+            )}
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleFileUpload}
+              style={{ display: "none" }}
+            />
+          </label>
+        </div>
       </UploadSection>
       <InputRow>
         <label>상품명</label>
         <input
           type="text"
           name="productName"
-          value={input.productName}
+          value={input.productName || ""}
           onChange={onChangeInput}
         />
       </InputRow>
@@ -243,7 +289,7 @@ const Edit = () => {
               <button
                 key={category}
                 onClick={() => handleCategoryClick(category)}
-                className={selectedCategory === category ? "selected" : ""}
+                className={input.category === category ? "selected" : ""}
               >
                 {category}
               </button>
@@ -255,18 +301,18 @@ const Edit = () => {
         <label>상세설명</label>
         <textarea
           name="content"
-          value={input.content}
+          value={input.content || ""}
           onChange={onChangeInput}
         />
       </InputRow>
       <StatusSection>
         <label>상태변경</label>
         <div>
-          {["거래가능", "거래중", "거래완료"].map((status) => (
+          {["거래가능", "거래중", "거래종료"].map((status) => (
             <button
               key={status}
               onClick={() => handleStatusClick(status)}
-              className={selectedStatus === status ? "selected" : ""}
+              className={input.status === status ? "selected" : ""}
             >
               {status}
             </button>
@@ -278,7 +324,7 @@ const Edit = () => {
         <input
           type="date"
           name="possibleDate"
-          value={input.possibleDate}
+          value={input.possibleDate || ""}
           onChange={onChangeInput}
         />
       </InputRow>
@@ -287,12 +333,15 @@ const Edit = () => {
         <input
           type="text"
           name="price"
-          value={input.price}
+          value={input.price || ""}
           onChange={onChangeInput}
         />
       </InputRow>
       <ButtonContainer>
-        <button className="cancel-btn" onClick={handleCancel}>
+        <button
+          className="cancel-btn"
+          onClick={() => navigate("/ongoing-transaction")}
+        >
           취소
         </button>
         <button className="submit-btn" onClick={handleSubmit}>

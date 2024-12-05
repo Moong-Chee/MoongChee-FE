@@ -1,19 +1,21 @@
-import React from "react";
+import React, { useContext, useEffect, useState } from "react";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
+import { UserContext } from "../App";
+import DefaultProfile from "./assets/images/DefaultProfile.png";
 
 const Container = styled.div`
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 393px; /* 모바일 화면 최대 너비 */
+  max-width: 393px;
   height: 100vh;
   margin: 0 auto;
   padding: 0;
   background-color: white;
   font-family: "Arial", sans-serif;
   box-sizing: border-box;
-  position: relative; /* Footer 고정 위치를 위해 설정 */
+  position: relative;
 `;
 
 const Header = styled.header`
@@ -86,15 +88,12 @@ const TransactionSection = styled.section`
   height: 280px;
   display: flex;
   flex-direction: column;
-  position: relative;
 
   h4 {
     font-size: 16px;
     font-weight: bold;
     margin-bottom: 30px;
     margin-top: 15px;
-    align-self: flex-start;
-    padding-left: 5px;
   }
 
   .transaction-item {
@@ -109,7 +108,6 @@ const TransactionSection = styled.section`
 
     span {
       font-size: 14px;
-      font-weight: normal;
     }
   }
 `;
@@ -136,6 +134,36 @@ const Footer = styled.footer`
 
 const Mypage = () => {
   const nav = useNavigate();
+  const { profileImage, name, reviews, setUserInfo } = useContext(UserContext);
+
+  // 새로고침 시 데이터를 유지하기 위해 localStorage 사용
+  useEffect(() => {
+    const savedUserInfo = JSON.parse(localStorage.getItem("userInfo"));
+
+    if (savedUserInfo) {
+      setUserInfo((prev) => ({
+        ...prev,
+        profileImage: savedUserInfo.profileImage || DefaultProfile,
+        name: savedUserInfo.name || "홍길동",
+      }));
+    }
+  }, [setUserInfo]);
+
+  // 현재 사용자 ID
+  const currentUserId = "me";
+
+  // 나에게 작성된 리뷰 필터링
+  const myReviews = reviews.filter(
+    (review) => review.targetUserId === currentUserId
+  );
+
+  // 평균 별점 계산
+  const averageRating = myReviews.length
+    ? (
+        myReviews.reduce((sum, review) => sum + review.rating, 0) /
+        myReviews.length
+      ).toFixed(1)
+    : "0.0";
 
   return (
     <Container>
@@ -147,13 +175,15 @@ const Mypage = () => {
       >
         <div className="profile">
           <img
-            src="https://via.placeholder.com/50"
+            src={profileImage || DefaultProfile}
             alt="프로필"
             className="profile-image"
           />
           <div className="profile-info">
-            <span className="nickname">택연맘</span>
-            <span className="rating">⭐ 4.3 | 후기 13</span>
+            <span className="nickname">{name || "홍길동"}</span>
+            <span className="rating">
+              ⭐ {averageRating} | 후기 {myReviews.length}
+            </span>
           </div>
         </div>
         <div className="arrow-icon">▶</div>
@@ -189,13 +219,15 @@ const Mypage = () => {
         </div>
       </TransactionSection>
       <Footer>
+        <div className="footer-icon" onClick={() => nav("/chat")}>
+          💬
+        </div>
         <div
           className="footer-icon"
           onClick={() => nav("/")} // 홈으로 이동
         >
           🏠
         </div>
-        <div className="footer-icon">📦</div>
         <div className="footer-icon">👤</div>
       </Footer>
     </Container>
