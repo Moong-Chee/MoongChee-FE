@@ -60,8 +60,8 @@ const ItemCard = styled.div`
 `;
 
 const ItemImage = styled.img`
-  width: 60px;
-  height: 60px;
+  width: 80px;
+  height: 80px;
   object-fit: cover;
   border-radius: 8px;
 `;
@@ -76,6 +76,12 @@ const ItemDetails = styled.div`
     white-space: nowrap; /* 한 줄로 표시 */
     overflow: hidden; /* 넘치는 텍스트 숨김 */
     text-overflow: ellipsis; /* 말줄임 표시 */
+  }
+
+  .price-type {
+    font-size: 12px;
+    color: #555;
+    margin-top: 10px;
   }
 
   p {
@@ -120,7 +126,9 @@ const Main = () => {
               <ItemImage src={product.image} alt={product.productName} />
               <ItemDetails>
                 <span>{product.productName}</span>
-                <p>{product.price}</p>
+                <p className="price-type">
+                  {product.price}원 | {product.transactionType}
+                </p>
                 <p>{product.date}</p>
               </ItemDetails>
             </ItemCard>

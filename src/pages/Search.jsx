@@ -88,14 +88,48 @@ const CategoryList = styled.div`
   }
 `;
 
+const TransactionTypeSection = styled.section`
+  padding: 16px;
+
+  h4 {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
+`;
+
+const TransactionTypeList = styled.div`
+  display: flex;
+  gap: 10px;
+
+  button {
+    padding: 8px 12px;
+    border: none;
+    background-color: #d9d9d9;
+    border-radius: 5px;
+    font-size: 14px;
+    cursor: pointer;
+
+    &.selected {
+      background-color: #555;
+      color: white;
+    }
+  }
+`;
+
 const Search = () => {
   const { ongoingProducts } = useContext(UserContext);
   const [keyword, setKeyword] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedTransactionType, setSelectedTransactionType] = useState(null);
   const navigate = useNavigate();
 
   const handleCategoryClick = (category) => {
     setSelectedCategory(category);
+  };
+
+  const handleTransactionTypeClick = (type) => {
+    setSelectedTransactionType(type);
   };
 
   const handleBack = () => {
@@ -108,7 +142,9 @@ const Search = () => {
         (product) =>
           product.status !== "거래종료" &&
           product.productName.includes(keyword) &&
-          (!selectedCategory || product.category === selectedCategory)
+          (!selectedCategory || product.category === selectedCategory) &&
+          (!selectedTransactionType ||
+            product.transactionType === selectedTransactionType)
       )
       .sort((a, b) => new Date(b.date) - new Date(a.date));
 
@@ -151,6 +187,20 @@ const Search = () => {
           )}
         </CategoryList>
       </CategorySection>
+      <TransactionTypeSection>
+        <h4>거래 유형</h4>
+        <TransactionTypeList>
+          {["판매", "대여"].map((type) => (
+            <button
+              key={type}
+              onClick={() => handleTransactionTypeClick(type)}
+              className={selectedTransactionType === type ? "selected" : ""}
+            >
+              {type}
+            </button>
+          ))}
+        </TransactionTypeList>
+      </TransactionTypeSection>
     </Container>
   );
 };

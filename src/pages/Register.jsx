@@ -2,32 +2,15 @@ import React, { useState, useContext, useRef } from "react";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
 import { UserContext } from "../App";
-
-const Container = styled.div`
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between; /* 위아래 여백 균형 */
-  width: 100%;
-  max-width: 393px;
-  min-height: 100vh; /* 전체 화면 높이를 채움 */
-  margin: 0 auto;
-  padding: 0;
-  background-color: white;
-  font-family: "Arial", sans-serif;
-  box-sizing: border-box;
-`;
-
-const Header = styled.header`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  height: 60px;
-  background-color: white;
-  font-weight: bold;
-  font-size: 20px;
-  border-bottom: 1px solid #ddd;
-`;
+import {
+  Container,
+  Header,
+  HeaderWithToggle,
+  InputRow,
+  CategorySection,
+  CategoryList,
+  ButtonContainer,
+} from "../components/Common1";
 
 const UploadSection = styled.section`
   display: flex;
@@ -60,107 +43,13 @@ const UploadSection = styled.section`
   }
 `;
 
-const InputRow = styled.div`
-  display: flex;
-  align-items: center;
-  margin-bottom: 16px;
-  width: 100%;
-
-  label {
-    font-size: 16px;
-    font-weight: bold;
-    color: #555;
-    margin-right: 16px;
-    min-width: 80px;
-  }
-
-  input,
-  textarea {
-    flex: 1;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    padding: 8px;
-    font-size: 14px;
-  }
-
-  textarea {
-    resize: none;
-    height: 100px;
-  }
-`;
-
-const CategorySection = styled.section`
-  display: flex;
-  align-items: flex-start;
-  width: 100%;
-  margin-bottom: 16px;
-
-  h4 {
-    font-size: 16px;
-    font-weight: bold;
-    color: #555;
-    margin-right: 16px;
-    min-width: 80px;
-  }
-`;
-
-const CategoryList = styled.div`
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  flex: 1;
-
-  button {
-    padding: 8px 12px;
-    border: none;
-    background-color: #d9d9d9;
-    border-radius: 5px;
-    font-size: 14px;
-    cursor: pointer;
-    width: 80px; /* 모든 버튼의 너비 고정 */
-    height: 30px; /* 모든 버튼의 높이 고정 */
-
-    &.selected {
-      background-color: #555;
-      color: white;
-    }
-  }
-`;
-
-const ButtonContainer = styled.div`
-  display: flex;
-  justify-content: space-between;
-  width: 100%;
-  margin-top: 16px;
-
-  button {
-    flex: 1;
-    height: 40px;
-    margin: 0 5px;
-    font-size: 16px;
-    font-weight: bold;
-    border-radius: 5px;
-    border: none;
-    cursor: pointer;
-  }
-
-  .cancel-btn {
-    background-color: #f5f5f5;
-    color: #555;
-  }
-
-  .submit-btn {
-    background-color: #007bff;
-    color: white;
-  }
-`;
-
 const Register = () => {
   const { ongoingProducts, setOngoingProducts } = useContext(UserContext);
   const idRef = useRef(
     Math.max(...ongoingProducts.map((product) => product.id), 0) + 1
   ); // 고유 ID 관리
   const [input, setInput] = useState({
+    transactionType: null,
     id: idRef.current,
     date: new Date().toLocaleDateString("ko-KR", {
       year: "numeric",
@@ -201,6 +90,10 @@ const Register = () => {
     }
   };
 
+  const handleToggle = (type) => {
+    setInput({ ...input, transactionType: type });
+  };
+
   const handleCategoryClick = (category) => {
     setSelectedCategory(category);
     setInput({ ...input, category });
@@ -216,6 +109,7 @@ const Register = () => {
       status: input.status,
       possibleDate: input.possibleDate, // 올바르게 수정
       price: input.price,
+      transactionType: input.transactionType,
       date: new Date().toLocaleDateString("ko-KR"), // 한국어 형식 날짜
     };
 
@@ -231,7 +125,27 @@ const Register = () => {
 
   return (
     <Container>
-      <Header>상품 등록</Header>
+      <HeaderWithToggle>
+        상품 등록
+        <div className="toggle-buttons">
+          <button
+            className={
+              input.transactionType === "판매" ? "selected" : "unselected"
+            }
+            onClick={() => handleToggle("판매")}
+          >
+            판매
+          </button>
+          <button
+            className={
+              input.transactionType === "대여" ? "selected" : "unselected"
+            }
+            onClick={() => handleToggle("대여")}
+          >
+            대여
+          </button>
+        </div>
+      </HeaderWithToggle>
       <UploadSection>
         <div
           className="upload-box"
@@ -284,7 +198,7 @@ const Register = () => {
         />
       </InputRow>
       <InputRow>
-        <label>대여 가능 날짜</label>
+        <label>거래 날짜/반납 날짜</label>
         <input
           type="date"
           name="possibleDate"
@@ -293,7 +207,7 @@ const Register = () => {
         />
       </InputRow>
       <InputRow>
-        <label>가격</label>
+        <label>판매 금액/대여 보증금</label>
         <input
           type="text"
           name="price"

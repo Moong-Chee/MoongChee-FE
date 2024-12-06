@@ -2,7 +2,6 @@ import "./App.css";
 import { useReducer, useRef, createContext, useState, useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 import Register from "./pages/Register";
-import Product from "./pages/Product";
 import Notfound from "./pages/Notfound";
 import Mypage from "./pages/Mypage";
 import Main from "./pages/Main";
@@ -157,7 +156,6 @@ function App() {
           <Routes>
             <Route path="/" element={<Main />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/product/:id" element={<Product />} />
             <Route path="/mypage" element={<Mypage />} />
             <Route path="/wishlist" element={<Wishlist />} />
             <Route path="/ongoing-transaction" element={<Ongoing />} />

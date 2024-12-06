@@ -83,7 +83,7 @@ const ProductCard = styled.div`
       width: 100%; /* 텍스트가 부모 컨테이너를 채움 */
     }
 
-    .product-price {
+    .product-price-type {
       font-size: 14px;
       font-weight: bold;
       color: #333;
@@ -130,7 +130,9 @@ const SearchResult = () => {
             <div className="product-details">
               <span className="product-title">{product.productName}</span>
               <span className="product-info">{product.date}</span>
-              <span className="product-price">{product.price}</span>
+              <span className="product-price-type">
+                {product.price}원 | {product.transactionType}
+              </span>
             </div>
           </ProductCard>
         ))}
