@@ -3,6 +3,7 @@ import styled from "styled-components";
 import { useParams, useNavigate } from "react-router-dom";
 import { UserContext } from "../contexts/UserContext.jsx";
 import Footer from "../components/Footer";
+import axios from "axios";
 
 // 스타일 컴포넌트
 const Container = styled.div`
@@ -149,7 +150,7 @@ const ButtonContainer = styled.div`
     &:disabled {
       background-color: #f5f5f5; /* 비활성화된 상태에서 배경색 */
       cursor: not-allowed;
-      color: #555
+      color: #555;
     }
   }
 
@@ -172,7 +173,6 @@ const ButtonContainer = styled.div`
     }
   }
 `;
-
 
 const Modal = styled.div`
   position: fixed;
@@ -242,14 +242,23 @@ const BackButton = styled.button`
 const Product = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { ongoingProducts, favoriteProducts, setFavoriteProducts, chatData, setChatData, reviews, userInfo, isLoggedIn } = useContext(UserContext);
+  const {
+    ongoingProducts,
+    favoriteProducts,
+    setFavoriteProducts,
+    chatData,
+    setChatData,
+    reviews,
+    userInfo,
+    isLoggedIn,
+  } = useContext(UserContext);
 
   const [product, setProduct] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [checklist, setChecklist] = useState({
     terms1: false,
     terms2: false,
-    termsConfirmed: false,  // 약관 확인 체크 상태
+    termsConfirmed: false, // 약관 확인 체크 상태
   });
 
   const [activeTerms, setActiveTerms] = useState({
@@ -275,17 +284,43 @@ const Product = () => {
     setProduct(foundProduct || null);
   }, [id, ongoingProducts]);
 
-  const handleFavoriteToggle = () => {
+  const handleFavoriteToggle = async () => {
     if (!product) return;
-    const isFavorite = favoriteProducts.some((fav) => fav.id === product.id);
-    const updatedFavorites = isFavorite
-      ? favoriteProducts.filter((fav) => fav.id !== product.id)
-      : [product, ...favoriteProducts];
-  
-    setFavoriteProducts(updatedFavorites);
-    localStorage.setItem("favoriteProducts", JSON.stringify(updatedFavorites));
+
+    try {
+      // 올바른 API URL
+      const apiUrl = "http://43.203.202.100:8080/api/v1";
+      const isFavorite = favoriteProducts.some(
+        (fav) => fav.postId === product.postId
+      );
+      const url = `${apiUrl}/posts/like/${product.postId}`;
+
+      if (isFavorite) {
+        // 관심 해제
+        await axios.delete(url, {
+          headers: {
+            Authorization: `Bearer ${userInfo?.jwtToken?.accessToken}`,
+          },
+        });
+        alert("관심 등록이 취소되었습니다.");
+        setFavoriteProducts((prev) =>
+          prev.filter((fav) => fav.postId !== product.postId)
+        );
+      } else {
+        // 관심 등록
+        await axios.post(url, null, {
+          headers: {
+            Authorization: `Bearer ${userInfo?.jwtToken?.accessToken}`,
+          },
+        });
+        alert("관심 목록에 추가되었습니다.");
+        setFavoriteProducts((prev) => [...prev, product]);
+      }
+    } catch (error) {
+      console.error("관심 등록/해제 에러:", error);
+      alert("관심 등록/해제 중 오류가 발생했습니다.");
+    }
   };
-  
 
   const handleChat = () => {
     setIsModalOpen(true);
@@ -310,7 +345,9 @@ const Product = () => {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const apiUrl = import.meta.env.VITE_REACT_APP_API_URL || "http://43.203.202.100:8080/api/v1";
+        const apiUrl =
+          import.meta.env.VITE_REACT_APP_API_URL ||
+          "http://43.203.202.100:8080/api/v1";
 
         const response = await fetch(`${apiUrl}/api/v1/posts/${id}`, {
           headers: {
@@ -348,19 +385,21 @@ const Product = () => {
   const getCategoryLabel = (keyword) => {
     return keywordToCategoryMap[keyword] || "기타";
   };
-  
-
 
   // "채팅 시작" 버튼 활성화 조건 - 약관 모두 확인했을 때
   const isChatEnabled = checklist.termsConfirmed;
 
-  const userReviews = reviews.filter((review) => review.targetUserId === product?.userId);
+  const userReviews = reviews.filter(
+    (review) => review.targetUserId === product?.userId
+  );
   const reviewCount = userReviews.length;
-  const averageRating = reviewCount > 0
-    ? (
-      userReviews.reduce((sum, review) => sum + review.rating, 0) / reviewCount
-    ).toFixed(1)
-    : "0.0";
+  const averageRating =
+    reviewCount > 0
+      ? (
+          userReviews.reduce((sum, review) => sum + review.rating, 0) /
+          reviewCount
+        ).toFixed(1)
+      : "0.0";
 
   if (!product) {
     return (
@@ -379,16 +418,26 @@ const Product = () => {
     <Container>
       <Header>상품 상세 정보</Header>
       <ProductDetails>
-        <ProductImage src={product.productImageUrls?.[0] || "/default-image.png"} alt={product.name} />
+        <ProductImage
+          src={product.productImageUrls?.[0] || "/default-image.png"}
+          alt={product.name}
+        />
         <ProductHeader tradeType={product.tradeType}>
           <div className="name">{product.name}</div>
           <div className="type">{getTradeTypeLabel(product.tradeType)}</div>
         </ProductHeader>
-        <UserSection onClick={() => navigate(`/profileother/${product.userId}`)}>
-          <img src={product.profileImageUrl || "/default-profile.png"} alt="프로필" />
+        <UserSection
+          onClick={() => navigate(`/profileother/${product.userId}`)}
+        >
+          <img
+            src={product.profileImageUrl || "/default-profile.png"}
+            alt="프로필"
+          />
           <div className="user-info">
             <div className="name">{product.authorName}</div>
-            <div className="stats">리뷰 {reviewCount}개 | 평균 ⭐ {averageRating}</div>
+            <div className="stats">
+              리뷰 {reviewCount}개 | 평균 ⭐ {averageRating}
+            </div>
           </div>
         </UserSection>
         <CategoryBox>{getCategoryLabel(product.keyword)}</CategoryBox>
@@ -435,10 +484,15 @@ const Product = () => {
             </ToggleButton>
             {activeTerms.term1 && (
               <TermsContent>
-                - 대여자는 반드시 반납 날짜까지 대여 상품을 반납해야 한다.<br />
-                - 반납 날짜까지 반납하지 않을 시 보증금을 돌려받지 못하며 최대 3일 이내 반드시 반납해야 한다.<br />
-                - 3일 이후에도 반납하지 않을 시, 대여 상품 원가에 해당하는 금액을 지급해야 하며 최대 5일 이내로 반드시 반납해야 한다.<br />
-                - 만약 그 이후에도 반납하지 않을 시 형법 제355조에 의거, 횡령죄로 간주하여 법적인 처벌을 받을 수 있다.
+                - 대여자는 반드시 반납 날짜까지 대여 상품을 반납해야 한다.
+                <br />
+                - 반납 날짜까지 반납하지 않을 시 보증금을 돌려받지 못하며 최대
+                3일 이내 반드시 반납해야 한다.
+                <br />
+                - 3일 이후에도 반납하지 않을 시, 대여 상품 원가에 해당하는
+                금액을 지급해야 하며 최대 5일 이내로 반드시 반납해야 한다.
+                <br />- 만약 그 이후에도 반납하지 않을 시 형법 제355조에 의거,
+                횡령죄로 간주하여 법적인 처벌을 받을 수 있다.
               </TermsContent>
             )}
           </TermsSection>
@@ -454,13 +508,22 @@ const Product = () => {
             </ToggleButton>
             {activeTerms.term2 && (
               <TermsContent>
-                상품 소유주는 상품 등록 시 상품의 정확한 사진을 등록하여 반납 시 상태와 확실한 구별이 가능하게 한다.
-                만약 소유주의 실수로 대여 전후 상태의 차이 확인이 불가능할 경우 소유주의 책임으로 간주한다.
-                대여자는 상품 반납 시, 대여 전과 동일한 상태를 유지해야 한다. 맨눈으로 확인할 수 있는 찍힘, 긁힘, 오염 등의 파손의 경우 대여자는 수리비 전액을 지급해야 한다.
+                상품 소유주는 상품 등록 시 상품의 정확한 사진을 등록하여 반납 시
+                상태와 확실한 구별이 가능하게 한다. 만약 소유주의 실수로 대여
+                전후 상태의 차이 확인이 불가능할 경우 소유주의 책임으로
+                간주한다. 대여자는 상품 반납 시, 대여 전과 동일한 상태를
+                유지해야 한다. 맨눈으로 확인할 수 있는 찍힘, 긁힘, 오염 등의
+                파손의 경우 대여자는 수리비 전액을 지급해야 한다.
                 <br />
                 <br />
-                서적의 경우 상품의 소유주는 대여자의 추가적인 필기가 가능함에 동의한다. 단, 서적의 원본 글씨를 알아볼 수 없을 정도의 낙서가 생겼을 경우, 해당 경우는 파손으로 간주, 대여자는 소유주에게 전공 서적 원가의 절반에 해당하는 금액을 지불한다.
-                상품의 소유주는 서적의 특성상 서적의 약간의 구겨짐, 찢어짐 등 약간의 훼손은 불가피함에 동의한다. 단, 서적을 읽음에 있어 글씨의 정확한 확인이 불가능할 정도의 훼손은 파손으로 간주, 대여자는 소유주에게 전공 서적 원가의 절반에 해당하는 금액을 지불한다.
+                서적의 경우 상품의 소유주는 대여자의 추가적인 필기가 가능함에
+                동의한다. 단, 서적의 원본 글씨를 알아볼 수 없을 정도의 낙서가
+                생겼을 경우, 해당 경우는 파손으로 간주, 대여자는 소유주에게 전공
+                서적 원가의 절반에 해당하는 금액을 지불한다. 상품의 소유주는
+                서적의 특성상 서적의 약간의 구겨짐, 찢어짐 등 약간의 훼손은
+                불가피함에 동의한다. 단, 서적을 읽음에 있어 글씨의 정확한 확인이
+                불가능할 정도의 훼손은 파손으로 간주, 대여자는 소유주에게 전공
+                서적 원가의 절반에 해당하는 금액을 지불한다.
               </TermsContent>
             )}
           </TermsSection>
@@ -490,7 +553,9 @@ const Product = () => {
               className="chat-btn"
               disabled={!checklist.termsConfirmed}
               style={{
-                backgroundColor: checklist.termsConfirmed ? "#007bff" : "#f0f0f0",
+                backgroundColor: checklist.termsConfirmed
+                  ? "#007bff"
+                  : "#f0f0f0",
                 color: checklist.termsConfirmed ? "white" : "#888",
               }}
               onClick={confirmChat}
@@ -498,7 +563,6 @@ const Product = () => {
               채팅 시작
             </button>
           </ButtonContainer>
-
         </ModalContent>
       </Modal>
     </Container>

@@ -116,36 +116,30 @@ const Wishlist = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchFavorites = async () => {
+    const fetchMyLikePosts = async () => {
       try {
-        const apiUrl = import.meta.env.VITE_REACT_APP_API_URL || "http://43.203.202.100:8080/api/v1";
-        const response = await axios.get(`${apiUrl}/api/v1/profile/my-like-posts`, {
+        const apiUrl = "http://43.203.202.100:8080/api/v1"; // 올바른 API 경로
+        const response = await axios.get(`${apiUrl}/profile/my-like-posts`, {
           headers: {
-            Authorization: `Bearer ${userInfo?.jwtToken?.accessToken}`,
+            Authorization: `Bearer ${userInfo?.jwtToken?.accessToken}`, // 토큰 추가
           },
         });
-  
+
         if (response.status === 200) {
-          const products = response.data.data.map((item) => ({
-            id: item.postId,
-            productName: item.name,
-            image: item.productImageUrls[0] || "/default-image.png",
-            date: item.date,
-            price: item.price,
-          }));
-          setFavoriteProducts(products);
+          setFavoriteProducts(response.data.data); // 관심 게시물 데이터 설정
         }
       } catch (error) {
-        console.error("관심 목록 데이터 불러오기 실패:", error);
+        console.error("관심 게시물 조회 에러:", error);
       }
     };
-  
-    fetchFavorites();
-  }, [userInfo, setFavoriteProducts]);
-  
+
+    fetchMyLikePosts();
+  }, [userInfo]);
 
   const removeFavorite = (productId) => {
-    setFavoriteProducts(favoriteProducts.filter((item) => item.id !== productId));
+    setFavoriteProducts(
+      favoriteProducts.filter((item) => item.id !== productId)
+    );
   };
 
   return (
@@ -160,16 +154,19 @@ const Wishlist = () => {
         {favoriteProducts.length > 0 ? (
           favoriteProducts
             .slice()
-            .sort((a, b) => new Date(b.date) - new Date(a.date))
+            .sort((a, b) => new Date(b.date) - new Date(a.date)) // 날짜 순 정렬
             .map((product) => (
-              <ItemCard key={product.id}>
+              <ItemCard key={product.postId}>
                 <ItemDate>{product.date}</ItemDate>
-                <ItemImage src={product.image} alt={product.productName} />
+                <ItemImage
+                  src={product.productImageUrls[0] || "/default-image.png"}
+                  alt={product.name}
+                />
                 <ItemDetails>
-                  <span>{product.productName}</span>
+                  <span>{product.name}</span>
                   <p>{product.price}원</p>
                 </ItemDetails>
-                <HeartIcon onClick={() => removeFavorite(product.id)} />
+                <HeartIcon onClick={() => removeFavorite(product.postId)} />
               </ItemCard>
             ))
         ) : (

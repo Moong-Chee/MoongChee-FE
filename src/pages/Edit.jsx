@@ -1,8 +1,8 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import styled from "styled-components";
 import { UserContext } from "../contexts/UserContext.jsx";
-
 import { useNavigate, useParams } from "react-router-dom";
+import axios from "axios";
 
 const Container = styled.div`
   display: flex;
@@ -182,13 +182,23 @@ const ButtonContainer = styled.div`
 
 const Edit = () => {
   const { id } = useParams();
-  const navigate = useNavigate(); // 상품 ID 가져오기
+  const navigate = useNavigate();
+  const { userInfo } = useContext(UserContext); // 상품 ID 가져오기
   const {
     ongoingProducts,
     setOngoingProducts,
     closedProducts,
     setClosedProducts,
   } = useContext(UserContext);
+
+  const categoryToKeywordMap = {
+    서적: "BOOK",
+    생활용품: "NECESSITY",
+    전자제품: "ELECTRONICS",
+    의류: "CLOTH",
+    잡화: "GOODS",
+    기타: "OTHER",
+  };
 
   const product =
     ongoingProducts.find((item) => item.id === parseInt(id)) || {};
@@ -197,6 +207,49 @@ const Edit = () => {
     ...product,
     status: product.status || "거래가능",
   });
+
+  const [productImages, setProductImages] = useState([]);
+
+  const keywordToCategoryMap = {
+    BOOK: "서적",
+    NECESSITY: "생활용품",
+    ELECTRONICS: "전자제품",
+    CLOTH: "의류",
+    GOODS: "잡화",
+    OTHER: "기타",
+  };
+
+  useEffect(() => {
+    const fetchProductDetails = async () => {
+      try {
+        const apiUrl = "http://43.203.202.100:8080/api/v1";
+        const response = await axios.get(`${apiUrl}/posts/${id}`, {
+          headers: {
+            Authorization: `Bearer ${userInfo?.jwtToken?.accessToken}`,
+          },
+        });
+
+        if (response.status === 200) {
+          const productData = response.data.data;
+          setInput({
+            productName: productData.name || "",
+            content: productData.productContent || "",
+            category: keywordToCategoryMap[productData.keyword] || "",
+            status:
+              productData.postStatus === "CLOSED" ? "거래종료" : "거래가능", // 상태 변환
+            possibleDate: productData.date || "",
+            price: productData.price || "",
+            image: productData.productImageUrls?.[0] || "",
+          });
+        }
+      } catch (error) {
+        console.error("상품 상세 정보 로드 에러:", error);
+        alert("상품 정보를 가져오는 중 오류가 발생했습니다.");
+      }
+    };
+
+    fetchProductDetails();
+  }, [id, userInfo]);
 
   const handleCategoryClick = (category) => {
     setInput({ ...input, category });
@@ -210,55 +263,101 @@ const Edit = () => {
     navigate("/ongoing-transaction");
   };
 
-  const handleSubmit = () => {
-    if (input.status === "거래종료") {
-      // 거래종료 상태일 경우 진행중인 거래에서 제거하고 종료된 거래로 이동
-      const updatedOngoingProducts = ongoingProducts.filter(
-        (item) => item.id !== product.id
-      );
-      setOngoingProducts(updatedOngoingProducts);
-      setClosedProducts((prev) => [input, ...prev]);
+  const handleSubmit = async () => {
+    try {
+      const apiUrl = "http://43.203.202.100:8080/api/v1";
 
-      // 로컬스토리지 업데이트
-      localStorage.setItem(
-        "ongoingProducts",
-        JSON.stringify(updatedOngoingProducts)
-      );
-      localStorage.setItem(
-        "closedProducts",
-        JSON.stringify([input, ...closedProducts])
-      );
-    } else {
-      // 진행중인 거래 상태 업데이트
-      const updatedOngoingProducts = ongoingProducts.map((item) =>
-        item.id === product.id ? { ...input } : item
-      );
-      setOngoingProducts(updatedOngoingProducts);
+      // 카테고리 매핑 확인
+      const keyword = categoryToKeywordMap[input.category];
+      if (!keyword) {
+        alert("유효하지 않은 카테고리입니다.");
+        return;
+      }
 
-      // 로컬스토리지 업데이트
-      localStorage.setItem(
-        "ongoingProducts",
-        JSON.stringify(updatedOngoingProducts)
-      );
+      // 필수 값 검증
+      if (!input.productName || !input.content || !input.price) {
+        alert("모든 필수 입력 항목을 입력해주세요.");
+        return;
+      }
+
+      // LocalDateTime 형식으로 변환
+      const date = input.possibleDate ? `${input.possibleDate}T00:00:00` : null;
+
+      // FormData 생성 및 필드 추가
+      const formData = new FormData();
+      formData.append("name", input.productName); // 상품명
+      formData.append("productContent", input.content); // 상세 설명
+      formData.append("keyword", keyword); // 카테고리
+      formData.append(
+        "postStatus",
+        input.status === "거래종료"
+          ? "CLOSED"
+          : input.status === "거래중"
+          ? "RESERVED"
+          : "ACTIVE"
+      ); // 거래 상태
+      formData.append("date", new Date(input.possibleDate).toISOString());
+      formData.append("price", parseInt(input.price, 10)); // 숫자로 변환
+
+      // 이미지 파일 추가 (파일 형식만 추가)
+      if (productImages && productImages.length > 0) {
+        productImages.forEach((file) => {
+          formData.append("productImages", file); // productImages 추가
+        });
+      }
+
+      // FormData 디버깅 출력
+      console.log("FormData 디버깅:");
+      formData.forEach((value, key) => {
+        console.log(`${key}:`, value);
+      });
+
+      // API 요청
+      const response = await axios.patch(`${apiUrl}/posts/${id}`, formData, {
+        headers: {
+          Authorization: `Bearer ${userInfo?.jwtToken?.accessToken}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      // 요청 성공 시 처리
+      if (response.status === 200) {
+        alert("상품 수정이 완료되었습니다.");
+        setOngoingProducts((prev) =>
+          prev.map((product) =>
+            product.postId === parseInt(id)
+              ? { ...product, ...response.data.data }
+              : product
+          )
+        );
+        navigate(
+          input.status === "거래종료"
+            ? "/closed-transaction"
+            : "/ongoing-transaction"
+        );
+      }
+    } catch (error) {
+      console.error("상품 수정 에러:", error);
+
+      if (error.response) {
+        console.error("응답 상태:", error.response.status);
+        console.error("응답 데이터:", error.response.data);
+        console.error("응답 헤더:", error.response.headers);
+
+        // 에러 메시지 출력
+        const errorMessage =
+          error.response.data?.message || "상품 수정 중 오류가 발생했습니다.";
+        alert(`서버 오류 메시지: ${errorMessage}`);
+      } else {
+        console.error("요청 자체 에러:", error.message);
+        alert("상품 수정 요청을 처리하지 못했습니다.");
+      }
     }
-
-    // 상태에 따라 이동
-    navigate(
-      input.status === "거래종료"
-        ? "/closed-transaction"
-        : "/ongoing-transaction"
-    );
   };
 
   const handleFileUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setInput({ ...input, image: reader.result }); // Base64 이미지 저장
-      };
-      reader.readAsDataURL(file); // 파일을 Base64로 변환
-    }
+    const files = Array.from(e.target.files); // 파일 배열로 변환
+    setProductImages(files); // 상태에 파일 저장
   };
 
   const onChangeInput = (e) => {
@@ -284,11 +383,13 @@ const Edit = () => {
               type="file"
               accept="image/*"
               onChange={handleFileUpload}
+              multiple
               style={{ display: "none" }}
             />
           </label>
         </div>
       </UploadSection>
+
       <InputRow>
         <label>상품명</label>
         <input

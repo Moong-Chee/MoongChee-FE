@@ -136,24 +136,36 @@ const Main = () => {
   useEffect(() => {
     const getProducts = async () => {
       try {
-        const apiUrl = import.meta.env.VITE_REACT_APP_API_URL || "http://43.203.202.100:8080/api/v1";
-    
-        const response = await axios.get(`${apiUrl}/api/v1/posts`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-          },
-        });
-    
+        const response = await axios.get(
+          "http://43.203.202.100:8080/api/v1/posts",
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+            },
+          }
+        );
+
         if (response.status === 200) {
-          console.log("상품 데이터:", response.data);
+          console.log("Fetched products:", response.data);
+
+          // 데이터 형식 확인 후 설정
+          setOngoingProducts(
+            Array.isArray(response.data.data)
+              ? response.data.data.map((product) => ({
+                  ...product,
+                  image: product.productImageUrls?.[0] || "/default-image.png",
+                }))
+              : []
+          );
         }
       } catch (error) {
-        console.error("상품 데이터 페칭 에러:", error);
+        console.error("Error fetching products:", error);
+        setOngoingProducts([]); // 오류 시 빈 배열로 초기화
       }
     };
 
     getProducts();
-  }, [axiosInstance, setOngoingProducts]);
+  }, [setOngoingProducts]);
 
   useEffect(() => {
     console.log("ongoingProducts:", ongoingProducts); // 디버깅 로그
@@ -174,8 +186,14 @@ const Main = () => {
         ) : (
           ongoingProducts.map((product) => (
             <ItemCard
-              key={product.id}
-              onClick={() => navigate(`/product/${product.id}`)} // 상세 페이지로 이동
+              key={product.postId}
+              onClick={() => {
+                if (!product.postId) {
+                  console.error("Product ID is undefined:", product);
+                  return;
+                }
+                navigate(`/product/${product.postId}`);
+              }}
             >
               <ItemImage
                 src={product.image ? product.image : "/default-image.png"}

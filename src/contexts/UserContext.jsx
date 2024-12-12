@@ -1,6 +1,12 @@
 // src/contexts/UserContext.js
 
-import React, { createContext, useState, useEffect, useReducer, useRef } from "react";
+import React, {
+  createContext,
+  useState,
+  useEffect,
+  useReducer,
+  useRef,
+} from "react";
 import axios from "axios";
 
 // UserContext 생성
@@ -17,8 +23,8 @@ export const UserProvider = ({ children }) => {
           id: null,
           status: "",
           jwtToken: {
-            accessToken: "",
-            refreshToken: "",
+            accessToken: null,
+            refreshToken: null,
           },
           name: "",
           email: "",
@@ -76,44 +82,45 @@ export const UserProvider = ({ children }) => {
 
   // 상품 데이터를 백엔드에서 가져오는 함수
   // UserContext.jsx에서 fetchProducts 함수 수정
-const fetchProducts = async () => {
-  if (!userInfo || !userInfo.jwtToken?.accessToken) {
-    console.warn("사용자 정보 또는 액세스 토큰이 없습니다.");
-    return;
-  }
-
-  try {
-    const apiUrl = import.meta.env.VITE_REACT_APP_API_URL || "http://43.203.202.100:8080/api/v1";
-
-    const response = await axios.get(`${apiUrl}/api/v1/posts`, {
-      headers: {
-        Authorization: `Bearer ${userInfo.jwtToken.accessToken}`,
-      },
-    });
-
-    if (response.status === 200) {
-      console.log("백엔드 응답 데이터:", response.data);
-      const products = response.data.data.map((item) => ({
-        id: item.postId,
-        authorName: item.authorName,
-        tradeType: item.tradeType,
-        productName: item.name,
-        image: item.productImageUrls?.[0] || null,
-        productContent: item.productContent,
-        keyword: item.keyword,
-        postStatus: item.postStatus,
-        date: item.date,
-        price: item.price,
-        createdAt: item.createdAt,
-      }));
-      console.log("매핑된 상품 데이터:", products);
-      setOngoingProducts(products);
+  const fetchProducts = async () => {
+    if (!userInfo || !userInfo.jwtToken?.accessToken) {
+      console.warn("사용자 정보 또는 액세스 토큰이 없습니다.");
+      return;
     }
-  } catch (error) {
-    console.error("상품 데이터 페칭 에러:", error);
-  }
-};
 
+    try {
+      const apiUrl =
+        import.meta.env.VITE_REACT_APP_API_URL ||
+        "http://43.203.202.100:8080/api/v1";
+
+      const response = await axios.get(`${apiUrl}/api/v1/posts`, {
+        headers: {
+          Authorization: `Bearer ${userInfo.jwtToken.accessToken}`,
+        },
+      });
+
+      if (response.status === 200) {
+        console.log("백엔드 응답 데이터:", response.data);
+        const products = response.data.data.map((item) => ({
+          id: item.postId,
+          authorName: item.authorName,
+          tradeType: item.tradeType,
+          productName: item.name,
+          image: item.productImageUrls?.[0] || null,
+          productContent: item.productContent,
+          keyword: item.keyword,
+          postStatus: item.postStatus,
+          date: item.date,
+          price: item.price,
+          createdAt: item.createdAt,
+        }));
+        console.log("매핑된 상품 데이터:", products);
+        setOngoingProducts(products);
+      }
+    } catch (error) {
+      console.error("상품 데이터 페칭 에러:", error);
+    }
+  };
 
   // 사용자 정보 변경 시 상품 데이터 페칭
   useEffect(() => {
@@ -170,10 +177,10 @@ const fetchProducts = async () => {
       status: "ACTIVE", // 상품 상태를 기본값으로 '거래가능'으로 설정
       userId: userInfo?.id,
     };
-  
+
     setOngoingProducts((prev) => [newProduct, ...prev]);
     dispatch({ type: "CREATE", data: newProduct });
-  };  
+  };
 
   return (
     <UserContext.Provider

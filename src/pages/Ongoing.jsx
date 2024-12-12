@@ -1,7 +1,8 @@
-import React, { useContext } from "react";
+import React, { useContext, useEffect } from "react";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
 import { UserContext } from "../contexts/UserContext.jsx";
+import axios from "axios";
 
 const Container = styled.div`
   display: flex;
@@ -134,16 +135,40 @@ const ItemDetails = styled.div`
 `;
 
 const Ongoing = () => {
-  const { ongoingProducts } = useContext(UserContext);
+  const { userInfo, ongoingProducts, setOngoingProducts } =
+    useContext(UserContext);
   const navigate = useNavigate();
 
   const handleEdit = (id) => {
     navigate(`/edit/${id}`); // 수정 페이지로 이동
   };
 
-  const availableProducts = ongoingProducts.filter(
-    (item) => item.status === "ACTIVE"
-  );
+  const availableProducts = ongoingProducts
+    ? ongoingProducts.filter((item) => item.postStatus === "ACTIVE")
+    : [];
+
+  useEffect(() => {
+    const fetchOngoingPosts = async () => {
+      if (!userInfo?.jwtToken?.accessToken) return; // userInfo가 없으면 실행하지 않음
+
+      try {
+        const apiUrl = "http://43.203.202.100:8080/api/v1";
+        const response = await axios.get(`${apiUrl}/profile/my-active-posts`, {
+          headers: {
+            Authorization: `Bearer ${userInfo.jwtToken.accessToken}`,
+          },
+        });
+
+        if (response.status === 200) {
+          setOngoingProducts(response.data.data); // 진행중인 게시물 데이터 설정
+        }
+      } catch (error) {
+        console.error("진행중인 게시물 조회 에러:", error);
+      }
+    };
+
+    fetchOngoingPosts();
+  }, [userInfo, setOngoingProducts]);
 
   return (
     <Container>
@@ -159,18 +184,33 @@ const Ongoing = () => {
           <p>진행중인 거래가 없습니다.</p>
         ) : (
           availableProducts.map((item) => (
-            <ItemCard key={item.id}>
-              <ItemDate>{item.date}</ItemDate>
-              <EditIcon onClick={() => navigate(`/edit/${item.id}`)}>✏️</EditIcon>
+            <ItemCard key={item.postId}>
+              <ItemDate>
+                {item.createdAt
+                  ? new Date(item.createdAt).toLocaleDateString("ko-KR", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })
+                  : "등록일 없음"}
+              </ItemDate>
+              <EditIcon onClick={() => handleEdit(item.postId)}>✏️</EditIcon>
               <ItemImage
-                src={item.image || "/default-image.png"}
-                alt={item.productName}
+                src={item.productImageUrls?.[0] || "/default-image.png"}
+                alt={item.name || "상품 이미지"}
               />
+
               <ItemDetails>
-                <span>{item.productName}</span>
+                <span>{item.name}</span>
                 <p>{item.price}원</p>
               </ItemDetails>
-              <TransactionStatus>{item.status}</TransactionStatus>
+              <TransactionStatus>
+                {item.postStatus === "RESERVED"
+                  ? "거래중"
+                  : item.postStatus === "CLOSED"
+                  ? "거래종료"
+                  : "거래가능"}
+              </TransactionStatus>
             </ItemCard>
           ))
         )}

@@ -1,8 +1,8 @@
-import React, { useContext } from "react";
+import React, { useContext, useEffect } from "react";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom"; // 페이지 이동을 위한 useNavigate 훅
 import { UserContext } from "../contexts/UserContext.jsx";
-
+import axios from "axios";
 
 const Container = styled.div`
   display: flex;
@@ -118,9 +118,32 @@ const ItemDetails = styled.div`
 `;
 
 const Closed = () => {
-  const { closedProducts } = useContext(UserContext);
+  const { userInfo, closedProducts, setClosedProducts } =
+    useContext(UserContext);
   const navigate = useNavigate(); // 페이지 이동을 위한 useNavigate 훅 사용
 
+  useEffect(() => {
+    const fetchClosedPosts = async () => {
+      if (!userInfo?.jwtToken?.accessToken) return; // userInfo가 없으면 실행하지 않음
+
+      try {
+        const apiUrl = "http://43.203.202.100:8080/api/v1";
+        const response = await axios.get(`${apiUrl}/profile/my-closed-posts`, {
+          headers: {
+            Authorization: `Bearer ${userInfo.jwtToken.accessToken}`,
+          },
+        });
+
+        if (response.status === 200) {
+          setClosedProducts(response.data.data); // 종료된 게시물 데이터 설정
+        }
+      } catch (error) {
+        console.error("종료된 게시물 조회 에러:", error);
+      }
+    };
+
+    fetchClosedPosts();
+  }, [userInfo, setClosedProducts]);
   return (
     <Container>
       {/* Header */}
@@ -134,20 +157,38 @@ const Closed = () => {
 
       {/* List */}
       <ListContainer>
-        {closedProducts
-          .slice()
-          .sort((a, b) => new Date(b.date) - new Date(a.date)) // 최신순 정렬
-          .map((product) => (
-            <ItemCard key={product.id}>
-              <ItemDate>{product.date}</ItemDate>
-              <ItemImage src={product.image} alt={product.productName} />
-              <ItemDetails>
-                <span>{product.productName}</span>
-                <p>{product.price}</p>
-              </ItemDetails>
-              <TransactionStatus>거래종료</TransactionStatus>
-            </ItemCard>
-          ))}
+        {closedProducts && closedProducts.length > 0 ? (
+          closedProducts
+            .slice()
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) // 최신순 정렬
+            .map((product) => (
+              <ItemCard key={product.id}>
+                <ItemDate>
+                  {product.createdAt
+                    ? new Date(product.createdAt).toLocaleDateString("ko-KR", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })
+                    : "등록일 없음"}
+                </ItemDate>
+
+                <ItemImage
+                  src={product.productImageUrls?.[0] || "/default-image.png"}
+                  alt={product.name || "상품 이미지"}
+                />
+                <ItemDetails>
+                  <span>{product.productName}</span>
+                  <p>
+                    {product.price ? `${product.price}원` : "가격 정보 없음"}
+                  </p>
+                </ItemDetails>
+                <TransactionStatus>거래종료</TransactionStatus>
+              </ItemCard>
+            ))
+        ) : (
+          <p>종료된 거래가 없습니다.</p>
+        )}
       </ListContainer>
     </Container>
   );
