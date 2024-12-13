@@ -1,7 +1,7 @@
-import React, { useContext } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import styled from "styled-components";
 import { UserContext } from "../contexts/UserContext.jsx";
-
+import axios from "axios";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 
@@ -58,28 +58,45 @@ const NoReviews = styled.div`
 `;
 
 const ReviewList = () => {
-  const { userInfo, reviews, ongoingProducts } = useContext(UserContext);
+  const { userInfo } = useContext(UserContext);
+  const [reviewsData, setReviewsData] = useState({
+    reviewCount: 0,
+    averageScore: "0.0",
+    reviews: [],
+  });
 
-  // 내가 등록한 상품 필터링
-  const myProducts = ongoingProducts.filter(
-    (product) => product.userId === userInfo?.id
-  );
+  useEffect(() => {
+    const fetchReviewsData = async () => {
+      try {
+        const apiUrl = "http://43.203.202.100:8080/api/v1";
+        const response = await axios.get(`${apiUrl}/reviews/user`, {
+          headers: {
+            Authorization: `Bearer ${userInfo?.jwtToken?.accessToken}`,
+          },
+        });
 
-  // 내가 등록한 상품에 대한 리뷰 필터링
-  const myReviews = reviews.filter((review) =>
-    myProducts.some((product) => product.id === review.targetProductId)
-  );
+        if (response.status === 200) {
+          setReviewsData(response.data.data);
+        }
+      } catch (error) {
+        console.error("리뷰 조회 에러:", error);
+        alert("리뷰 데이터를 불러오는 중 오류가 발생했습니다.");
+      }
+    };
+
+    fetchReviewsData();
+  }, [userInfo]);
 
   return (
     <Container>
       <Header title="내 리뷰" />
       <Content>
-        {myReviews.length > 0 ? (
-          myReviews.map((review) => (
+        {reviewsData.reviews.length > 0 ? (
+          reviewsData.reviews.map((review) => (
             <ReviewCard key={review.id}>
-              <div className="title">상품: {review.productName}</div>
-              <div className="rating">별점: ⭐ {review.rating}</div>
-              <div className="content">{review.content}</div>
+              <div className="title">상품 ID: {review.postId}</div>
+              <div className="rating">별점: ⭐ {review.reviewScore}</div>
+              <div className="content">{review.reviewContent}</div>
             </ReviewCard>
           ))
         ) : (

@@ -1,8 +1,9 @@
-import React, { useContext } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
 import { UserContext } from "../contexts/UserContext.jsx";
 import DefaultProfile from "./assets/images/DefaultProfile.png";
+import axios from "axios";
 
 const Container = styled.div`
   display: flex;
@@ -137,31 +138,35 @@ const Footer = styled.footer`
 
 const Mypage = () => {
   const nav = useNavigate();
-  const {
-    userInfo,
-    reviews,
-    ongoingProducts,
-  } = useContext(UserContext);
+  const { userInfo } = useContext(UserContext);
+  const [profileData, setProfileData] = useState({
+    name: userInfo?.name || "홍길동",
+    profileImageUrl: userInfo?.profileImageUrl || DefaultProfile,
+    reviewCount: 0,
+    averageScore: "0.0",
+  });
 
-  // 내가 등록한 상품 필터링
-  const myProducts = ongoingProducts.filter(
-    (product) => product.userId === userInfo?.id
-  );
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      try {
+        const apiUrl = "http://43.203.202.100:8080/api/v1"; // API URL 선언
+        const response = await axios.get(`${apiUrl}/profile`, {
+          headers: {
+            Authorization: `Bearer ${userInfo?.jwtToken?.accessToken}`, // 토큰 추가
+          },
+        });
 
-  // 내가 등록한 상품에 대한 리뷰 필터링
-  const myReviews = reviews.filter((review) =>
-    myProducts.some((product) => product.id === review.targetProductId)
-  );
+        if (response.status === 200) {
+          setProfileData(response.data.data); // 응답 데이터를 state에 설정
+        }
+      } catch (error) {
+        console.error("마이페이지 조회 에러:", error);
+        alert("마이페이지 데이터를 불러오는 중 오류가 발생했습니다.");
+      }
+    };
 
-  // 평균 별점 계산
-  const averageRating = myReviews.length
-    ? (
-        myReviews.reduce((sum, review) => sum + review.rating, 0) /
-        myReviews.length
-      ).toFixed(1)
-    : "0.0";
-
-  const profileImageUrl = userInfo?.profileImageUrl || DefaultProfile;
+    fetchProfileData();
+  }, [userInfo]);
 
   return (
     <Container>
@@ -169,27 +174,22 @@ const Mypage = () => {
       <ProfileSection>
         <div className="profile">
           <img
-            src={profileImageUrl}
+            src={profileData.profileImageUrl || DefaultProfile}
             alt="프로필"
             className="profile-image"
-            onClick={() => nav("/profile")} // 프로필 이미지를 클릭하면 프로필 페이지로 이동
+            onClick={() => nav("/profile")}
             onError={(e) => {
               e.target.onerror = null;
               e.target.src = DefaultProfile;
             }}
           />
+
           <div className="profile-info">
-            <span
-              className="nickname"
-              onClick={() => nav("/profile")} // 닉네임 클릭 시 프로필 페이지로 이동
-            >
-              {userInfo?.name || "홍길동"}
+            <span className="nickname" onClick={() => nav("/profile")}>
+              {profileData.name}
             </span>
-            <span
-              className="rating"
-              onClick={() => nav("/reviewlist")} // 별점 및 후기 갯수를 클릭하면 ViewList 페이지로 이동
-            >
-              ⭐ {averageRating} | 후기 {myReviews.length}
+            <span className="rating" onClick={() => nav("/reviewlist")}>
+              ⭐ {profileData.averageScore} | 후기 {profileData.reviewCount}
             </span>
           </div>
         </div>

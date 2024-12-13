@@ -275,7 +275,12 @@ const Edit = () => {
       }
 
       // 필수 값 검증
-      if (!input.productName || !input.content || !input.price) {
+      if (
+        !input.productName ||
+        !input.content ||
+        !input.price ||
+        !input.category
+      ) {
         alert("모든 필수 입력 항목을 입력해주세요.");
         return;
       }
@@ -296,13 +301,13 @@ const Edit = () => {
           ? "RESERVED"
           : "ACTIVE"
       ); // 거래 상태
-      formData.append("date", new Date(input.possibleDate).toISOString());
+      formData.append("date", date); // 날짜 추가
       formData.append("price", parseInt(input.price, 10)); // 숫자로 변환
 
-      // 이미지 파일 추가 (파일 형식만 추가)
+      // 이미지 파일 추가
       if (productImages && productImages.length > 0) {
         productImages.forEach((file) => {
-          formData.append("productImages", file); // productImages 추가
+          formData.append("productImages", file);
         });
       }
 
@@ -342,7 +347,6 @@ const Edit = () => {
       if (error.response) {
         console.error("응답 상태:", error.response.status);
         console.error("응답 데이터:", error.response.data);
-        console.error("응답 헤더:", error.response.headers);
 
         // 에러 메시지 출력
         const errorMessage =
