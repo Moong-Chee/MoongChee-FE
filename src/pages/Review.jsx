@@ -1,8 +1,9 @@
-import React, { useState, useContext } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import React, { useState, useContext, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import styled from "styled-components";
 import { UserContext } from "../contexts/UserContext.jsx";
 import Footer from "../components/Footer";
+import axios from "axios";
 
 const Container = styled.div`
   display: flex;
@@ -101,39 +102,112 @@ const SubmitButton = styled.button`
 `;
 
 const Review = () => {
-  const location = useLocation();
   const navigate = useNavigate();
+  const { userInfo } = useContext(UserContext);
   const { reviews, setReviews } = useContext(UserContext);
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
+  const { productId } = useParams();
+  const [productInfo, setProductInfo] = useState({
+    productName: "",
+    productImage: "",
+  });
 
-  const { productId, productName, productImage } = location.state || {};
+  useEffect(() => {
+    const fetchProductInfo = async () => {
+      if (!productId) {
+        console.error("productId가 undefined입니다.");
+        return;
+      }
 
-  const handleSubmit = () => {
+      try {
+        const apiUrl = "http://43.203.202.100:8080/api/v1";
+        const response = await axios.get(`${apiUrl}/posts/${productId}`, {
+          headers: {
+            Authorization: `Bearer ${userInfo?.jwtToken?.accessToken}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (response.status === 200) {
+          const data = response.data.data;
+          setProductInfo({
+            productName: data.name,
+            productImage: data.productImageUrls?.[0] || "/default-image.png",
+          });
+        }
+      } catch (error) {
+        console.error("상품 정보 로드 에러:", error);
+        alert("상품 정보를 가져오는 중 오류가 발생했습니다.");
+        navigate("/"); // 오류 발생 시 홈으로 이동
+      }
+    };
+
+    fetchProductInfo();
+    console.log("productId:", productId);
+  }, [productId, userInfo, navigate]);
+
+  const handleSubmit = async () => {
     if (!rating || !comment.trim()) {
       alert("별점과 후기를 모두 입력해주세요.");
       return;
     }
 
-    const newReview = {
-      productId, // 상품 ID 추가
-      rating,
-      comment,
-    };
+    const apiUrl = "http://43.203.202.100:8080/api/v1";
+    const reviewScoreEnum = ["ONE", "TWO", "THREE", "FOUR", "FIVE"];
 
-    const updatedReviews = [...reviews, newReview];
-    setReviews(updatedReviews);
-    localStorage.setItem("reviews", JSON.stringify(updatedReviews)); // 로컬 스토리지 저장
-    navigate("/mypage");
+    try {
+      const formData = new FormData();
+      // 서버가 requestDTO 키를 요구하므로 JSON 데이터를 문자열로 추가
+      formData.append(
+        "requestDTO",
+        JSON.stringify({
+          reviewScore: reviewScoreEnum[rating - 1],
+          reviewContent: comment,
+        })
+      );
+
+      const response = await axios.post(
+        `${apiUrl}/reviews/${productId}`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${userInfo?.jwtToken?.accessToken}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      if (response.status === 201) {
+        alert("리뷰가 성공적으로 작성되었습니다.");
+        navigate("/mypage");
+      }
+    } catch (error) {
+      console.error("리뷰 작성 에러:", error);
+
+      if (error.response) {
+        console.error("서버 응답 데이터:", error.response.data);
+        alert(
+          `리뷰 작성 실패: ${
+            error.response.data?.message || "알 수 없는 오류입니다."
+          }`
+        );
+      } else {
+        alert("리뷰 작성 요청 중 오류가 발생했습니다.");
+      }
+    }
   };
 
   return (
     <Container>
       <Header>리뷰 작성</Header>
       <ReviewHeader>
-        <ProductImage src={productImage || "/default-image.png"} alt="상품 이미지" />
+        <ProductImage
+          src={productInfo.productImage || "/default-image.png"}
+          alt="상품 이미지"
+        />
         <div className="product-info">
-          <div className="product-name">{productName}</div>
+          <div className="product-name">{productInfo.productName}</div>
         </div>
       </ReviewHeader>
       <ReviewContent>

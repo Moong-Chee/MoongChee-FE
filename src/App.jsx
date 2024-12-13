@@ -86,7 +86,7 @@ function App() {
         <Route path="/search" element={<Search />} />
         <Route path="/searchresult" element={<SearchResult />} />
         <Route path="/initialinfo" element={<Initialinfo />} />
-        <Route path="/review" element={<Review />} />
+        <Route path="/review/:productId" element={<Review />} />
         <Route
           path="/chat/:id"
           element={
