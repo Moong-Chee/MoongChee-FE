@@ -427,19 +427,27 @@ const Product = () => {
           <div className="type">{getTradeTypeLabel(product.tradeType)}</div>
         </ProductHeader>
         <UserSection
-          onClick={() => navigate(`/profileother/${product.userId}`)}
+          onClick={() => {
+            if (product?.userId) {
+              // userId가 있는 경우에만 이동
+              navigate(`/profileother/${product.userId}`);
+            } else {
+              alert("사용자 정보를 찾을 수 없습니다.");
+            }
+          }}
         >
           <img
-            src={product.profileImageUrl || "/default-profile.png"}
+            src={product?.profileImageUrl || "/default-profile.png"}
             alt="프로필"
           />
           <div className="user-info">
-            <div className="name">{product.authorName}</div>
+            <div className="name">{product?.authorName || "알 수 없음"}</div>
             <div className="stats">
               리뷰 {reviewCount}개 | 평균 ⭐ {averageRating}
             </div>
           </div>
         </UserSection>
+
         <CategoryBox>{getCategoryLabel(product.keyword)}</CategoryBox>
         <InfoRow>
           <div className="label">상세설명</div>
